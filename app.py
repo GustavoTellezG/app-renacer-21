@@ -28,42 +28,36 @@ st.markdown("---")
 
 # --- CONEXIÓN SEGURA (Secretos) ---
 try:
-    # Intenta leer la clave desde los Secretos de Streamlit
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
 except Exception as e:
-    # Si falla, muestra un mensaje amigable para ti (el administrador)
-    st.error("⚠️ Error de Configuración: No se encontró la API Key en los 'Secrets' de Streamlit.")
-    st.warning("Ve a 'Manage App' > 'Settings' > 'Secrets' y configura GOOGLE_API_KEY.")
+    st.error("⚠️ Error de Configuración: No se encontró la API Key.")
     st.stop()
 
-# --- FUNCIÓN DE ANÁLISIS (CEREBRO MEJORADO) ---
+# --- FUNCIÓN DE ANÁLISIS (CEREBRO AJUSTADO) ---
 def analizar_imagen(imagen):
-    # Usamos el modelo rápido y visual que ya validamos
     model = genai.GenerativeModel('gemini-2.5-flash') 
     
-    # PROMPT DE ALTA PRECISIÓN
+    # PROMPT CON RESTRICCIONES DE MARCA
     prompt_sistema = """
     Actúa como el Coach Nutricional experto del 'Reto Renacer 21'.
-    Analiza la imagen con visión de detalle "forense".
+    Analiza la imagen con visión de detalle "forense" (texturas, semillas, brillo).
     
-    🔍 **Instrucción de Diferenciación Visual:**
-    - Fíjate en texturas internas, semillas y brillo.
-    - Distingue bien entre Jitomate (rojo, pulpa húmeda, semillas visibles) vs Pimiento/Morrón (piel lisa, estructura hueca, sin pulpa líquida).
+    🔍 **Instrucciones de Personalidad:**
+    - Tono: Profesional, empático y basado en ciencia.
+    - ⛔ **RESTRICCIÓN ABSOLUTA:** NUNCA recomiendes "vinagre de manzana" ni remedios caseros.
+    - Enfócate solo en: Composición del plato, macronutrientes, orden de ingesta (vegetales primero) e hidratación.
     
     Responde en este formato exacto:
-    1. 🥘 **Identificación**: Lista los alimentos detectados con precisión.
+    1. 🥘 **Identificación**: Lista los alimentos detectados (distingue bien jitomate vs pimiento).
     2. 🔥 **Calorías**: Estimación rápida del plato total.
     3. 🚦 **Semáforo**: 
        - VERDE (Adelante, alimentos naturales/fibra).
        - AMARILLO (Cuidado con porciones/combinaciones/frutas dulces).
        - ROJO (Evitar procesados/fritos/azúcares).
-    4. 💡 **Consejo Renacer**: Un tip breve, empático y accionable basado en las reglas del reto (orden de ingesta, vinagre, hidratación).
-    
-    Sé conciso, motivador y directo.
+    4. 💡 **Consejo Renacer**: Un tip breve y accionable (Ej: "Mastica despacio", "Bebe agua antes", "Empieza por la fibra").
     """
     
-    # Generar respuesta
     response = model.generate_content([prompt_sistema, imagen])
     return response.text
 
@@ -79,20 +73,15 @@ elif opcion == "📂 Subir desde Galería":
 
 # --- LÓGICA DEL BOTÓN ---
 if img_file:
-    # Convertir y mostrar imagen
     imagen = Image.open(img_file)
     st.image(imagen, caption="Tu Plato", use_column_width=True)
     
     if st.button("🔍 ANALIZAR MI PLATO"):
-        with st.spinner("El Coach está analizando texturas e ingredientes..."):
+        with st.spinner("El Coach está analizando tus nutrientes..."):
             try:
-                # Llamada a la IA
                 respuesta = analizar_imagen(imagen)
-                
-                # Mostrar resultado
                 st.success("¡Análisis Completado!")
                 st.markdown(respuesta)
-                st.balloons() # ¡Celebración!
-                
+                st.balloons()
             except Exception as e:
-                st.error(f"Ocurrió un error técnico: {str(e)}")
+                st.error(f"Error técnico: {str(e)}")
