@@ -2,81 +2,57 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(
-    page_title="Scanner Renacer 21",
-    page_icon="🥗",
-    layout="centered"
-)
+# --- CONFIGURACIÓN ---
+st.set_page_config(page_title="Scanner Renacer 21", page_icon="🥗")
 
-# --- CABECERA Y ESTILO ---
-st.title("🥗 Coach Renacer 21: Scanner de Alimentos")
-st.markdown("""
-    *Bienvenido al Reto Renacer. Sube una foto de tu plato para analizar si cumple con nuestro protocolo.*
-""")
+st.title("🥗 Coach Renacer 21: Scanner")
 
-# --- BARRA LATERAL (CONFIGURACIÓN) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    st.header("🔐 Llave de Acceso")
-    api_key = st.text_input("Ingresa tu Google API Key", type="password")
-    st.warning("Tu llave no se guarda, solo se usa para esta sesión.")
-    st.markdown("---")
-    st.markdown("**Reglas de Oro Renacer:**")
-    st.markdown("1. 🥬 Fibra primero")
-    st.markdown("2. 🥩 Proteína y Grasas")
-    st.markdown("3. 🍠 Carbohidratos al final")
+    api_key = st.text_input("Tu API Key", type="password")
 
-# --- FUNCIÓN PARA CONSULTAR A GEMINI ---
+# --- FUNCIÓN INTELIGENTE ---
 def analizar_imagen(imagen, prompt, key):
+    genai.configure(api_key=key)
+    
+    # INTENTO 1: Usamos el modelo Flash estándar
+    nombre_modelo = 'gemini-1.5-flash'
+    
     try:
-        genai.configure(api_key=key)
-        model = genai.GenerativeModel('gemini-1.5-flash') # Usamos Flash para respuesta rápida
+        model = genai.GenerativeModel(nombre_modelo)
         response = model.generate_content([prompt, imagen])
         return response.text
     except Exception as e:
-        return f"Error de conexión: {str(e)}"
+        # SI FALLA: Iniciamos Protocolo de Diagnóstico
+        error_msg = f"⚠️ Error con {nombre_modelo}: {str(e)}"
+        
+        # Consultamos qué modelos SÍ están disponibles
+        lista_modelos = []
+        try:
+            for m in genai.list_models():
+                if 'generateContent' in m.supported_generation_methods:
+                    lista_modelos.append(m.name)
+            debug_info = f"\n\n📋 **MODELOS DISPONIBLES EN TU CUENTA:**\n" + "\n".join(lista_modelos)
+        except Exception as e2:
+            debug_info = f"\n\nNo se pudo listar modelos: {str(e2)}"
+            
+        return error_msg + debug_info
 
-# --- INTERFAZ PRINCIPAL ---
-opcion = st.radio("¿Cómo quieres subir tu plato?", ["Subir Foto 📂", "Tomar Foto 📸"], horizontal=True)
-
+# --- INTERFAZ ---
+opcion = st.radio("Opción:", ["Subir Foto 📂", "Cámara 📸"], horizontal=True)
 imagen_usuario = None
 
 if opcion == "Subir Foto 📂":
-    archivo = st.file_uploader("Sube tu imagen aquí...", type=["jpg", "jpeg", "png"])
-    if archivo:
-        imagen_usuario = Image.open(archivo)
+    archivo = st.file_uploader("Imagen", type=["jpg", "png", "jpeg"])
+    if archivo: imagen_usuario = Image.open(archivo)
+elif opcion == "Cámara 📸":
+    camera = st.camera_input("Foto")
+    if camera: imagen_usuario = Image.open(camera)
 
-elif opcion == "Tomar Foto 📸":
-    camera = st.camera_input("Toma una foto de tu comida")
-    if camera:
-        imagen_usuario = Image.open(camera)
-
-# --- ANÁLISIS ---
-if imagen_usuario is not None and api_key:
-    st.image(imagen_usuario, caption="Tu plato", use_column_width=True)
-    
-    if st.button("🔍 ANALIZAR PLATO AHORA"):
-        with st.spinner("El Coach está revisando tus ingredientes..."):
-            
-            # EL PROMPT MAESTRO (Aquí está la inteligencia del Coach)
-            prompt_sistema = """
-            Actúa como el Coach Experto en Nutrición y Salud del 'Reto Renacer 21'. 
-            Tu tono es motivador pero firme con las reglas de salud metabólica.
-            Analiza la imagen de comida adjunta y responde en este formato estructurado:
-
-            1. 🥘 **Identificación:** ¿Qué alimentos ves en el plato? (Sé breve).
-            2. 🔥 **Calorías Estimadas:** Un rango aproximado total.
-            3. 🚦 **Semáforo Renacer:** - VERDE (Excelente, cumple protocolo anti-inflamatorio).
-               - AMARILLO (Precaución, cuida las porciones o combinaciones).
-               - ROJO (Evitar, contiene procesados, azúcar o harinas refinadas).
-            4. 🧬 **Análisis Metabólico:** Explica brevemente el impacto en la insulina de este plato.
-            5. 💡 **Consejo Táctico:** Dales un consejo accionable basado en las reglas del reto (ej. orden de ingesta, agregar vinagre, caminar después de comer).
-            """
-            
-            resultado = analizar_imagen(imagen_usuario, prompt_sistema, api_key)
-            st.markdown("---")
-            st.markdown(resultado)
-            st.success("¡Análisis completado! Sigue adelante con el Reto.")
-
-elif imagen_usuario is not None and not api_key:
-    st.warning("⚠️ Por favor ingresa tu API Key en la barra lateral para activar al Coach.")
+if imagen_usuario and api_key:
+    st.image(imagen_usuario, width=300)
+    if st.button("🔍 ANALIZAR AHORA"):
+        with st.spinner("Analizando..."):
+            prompt = "Eres un nutricionista experto. Analiza este plato, estima calorías y di si es saludable. Sé breve."
+            resultado = analizar_imagen(imagen_usuario, prompt, api_key)
+            st.warning(resultado) # Usamos warning para que resalte si es error o texto
