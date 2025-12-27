@@ -2,85 +2,61 @@ import streamlit as st
 import google.generativeai as genai
 from PIL import Image
 
-# --- CONFIGURACIÓN DE LA PÁGINA ---
-st.set_page_config(
-    page_title="Scanner Renacer 21",
-    page_icon="🥗",
-    layout="centered"
-)
+# --- CONFIGURACIÓN ---
+st.set_page_config(page_title="Scanner Renacer 21", page_icon="🥗", layout="centered")
 
-# --- CABECERA Y ESTILO ---
-st.title("🥗 Coach Renacer 21: Scanner")
+# --- ESTILOS VISUALES ---
 st.markdown("""
-    *Sube una foto de tu plato para ver si cumple con el protocolo.*
-""")
+    <style>
+    .stButton>button { width: 100%; background-color: #4CAF50; color: white; font-weight: bold; }
+    </style>
+""", unsafe_allow_html=True)
 
-# --- BARRA LATERAL ---
-with st.sidebar:
-    st.header("🔐 Llave de Acceso")
-    api_key = st.text_input("Ingresa tu Google API Key", type="password")
-    
-    st.markdown("---")
-    st.info("💡 **Tip:** Asegúrate de que la foto tenga buena luz.")
+st.title("🥗 Coach Renacer: Scanner IA")
+st.markdown("---")
+
+# --- CONEXIÓN SECRETA (Sin pedirle nada al usuario) ---
+try:
+    api_key = st.secrets["GOOGLE_API_KEY"]
+    genai.configure(api_key=api_key)
+except:
+    st.error("⚠️ Error: No se detectó la API Key del sistema.")
+    st.stop()
 
 # --- FUNCIÓN DE ANÁLISIS ---
-def analizar_imagen(imagen, prompt, key):
-    try:
-        genai.configure(api_key=key)
-        
-        # AQUÍ ESTÁ EL CAMBIO CLAVE: Usamos el modelo que SÍ tienes
-        model = genai.GenerativeModel('gemini-2.5-flash') 
-        
-        response = model.generate_content([prompt, imagen])
-        return response.text
-    except Exception as e:
-        return f"⚠️ Error técnico: {str(e)}"
+def analizar_imagen(imagen):
+    model = genai.GenerativeModel('gemini-2.5-flash') 
+    prompt = """
+    Actúa como el Coach del 'Reto Renacer 21'. Analiza la imagen:
+    1. 🥘 **Identifica**: ¿Qué es?
+    2. 🔥 **Calorías**: Estimación rápida.
+    3. 🚦 **Semáforo**: VERDE (Adelante), AMARILLO (Cuidado), ROJO (Evitar).
+    4. 💡 **Consejo**: Tip corto y motivador.
+    """
+    return model.generate_content([prompt, imagen]).text
 
-# --- INTERFAZ PRINCIPAL ---
-opcion = st.radio("Elige una opción:", ["Subir Foto 📂", "Usar Cámara 📸"], horizontal=True)
+# --- INTERFAZ ---
+opcion = st.radio("", ["📸 Tomar Foto", "📂 Subir desde Galería"], horizontal=True)
 
-imagen_usuario = None
+img_file = None
 
-if opcion == "Subir Foto 📂":
-    archivo = st.file_uploader("Carga tu imagen aquí", type=["jpg", "jpeg", "png"])
-    if archivo:
-        imagen_usuario = Image.open(archivo)
+if opcion == "📸 Tomar Foto":
+    img_file = st.camera_input("Captura tu plato")
+elif opcion == "📂 Subir desde Galería":
+    img_file = st.file_uploader("Elige tu imagen", type=["jpg", "png", "jpeg"])
 
-elif opcion == "Usar Cámara 📸":
-    camera = st.camera_input("Toma la foto")
-    if camera:
-        imagen_usuario = Image.open(camera)
-
-# --- BOTÓN DE ACCIÓN ---
-if imagen_usuario is not None:
-    st.image(imagen_usuario, caption="Tu plato", use_column_width=True)
+if img_file:
+    # Mostrar imagen
+    imagen = Image.open(img_file)
+    st.image(imagen, caption="Tu Plato", use_column_width=True)
     
-    if api_key:
-        if st.button("🔍 CONSULTAR AL COACH"):
-            with st.spinner("El Coach está analizando tus macros..."):
-                
-                # EL PROMPT DEL COACH RENACER
-                prompt_sistema = """
-                Actúa como el Coach Experto del 'Reto Renacer 21'. Tu tono es motivador pero educativo.
-                Analiza la imagen de comida y responde:
-                
-                1. 🥘 **¿Qué es esto?**: Identifica los alimentos.
-                2. 🔥 **Calorías Aprox**: Estimación rápida.
-                3. 🚦 **Semáforo Renacer**: 
-                   - VERDE (Adelante, cumple protocolo).
-                   - AMARILLO (Cuidado con porciones/combinaciones).
-                   - ROJO (Evitar, procesados/azúcar).
-                4. 💡 **Consejo Táctico**: Un tip breve sobre cómo comerlo (orden de ingesta, etc).
-                
-                Sé conciso y directo.
-                """
-                
-                resultado = analizar_imagen(imagen_usuario, prompt_sistema, api_key)
-                
-                if "⚠️ Error" in resultado:
-                    st.error(resultado)
-                else:
-                    st.success("¡Análisis Completado!")
-                    st.markdown(resultado)
-    else:
-        st.warning("⚠️ Por favor ingresa tu API Key en la barra lateral.")
+    # Botón de acción
+    if st.button("🔍 ANALIZAR MI PLATO"):
+        with st.spinner("El Coach está revisando tus ingredientes..."):
+            try:
+                respuesta = analizar_imagen(imagen)
+                st.markdown("### 📋 Veredicto del Coach:")
+                st.info(respuesta)
+                st.balloons() # ¡Efecto de celebración!
+            except Exception as e:
+                st.error(f"Error de conexión: {e}")
