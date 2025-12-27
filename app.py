@@ -23,7 +23,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- CABECERA ---
-st.title("🚦 Semáforo Nutricional Renacer")
+st.title("🚦 Semáforo Nutricional Renacer-21")
 st.markdown("Tu guía visual para tomar mejores decisiones en cada plato.")
 
 # --- CONEXIÓN SEGURA (Secretos) ---
