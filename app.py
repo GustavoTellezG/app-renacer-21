@@ -4,8 +4,8 @@ from PIL import Image
 
 # --- CONFIGURACIÓN DE LA PÁGINA ---
 st.set_page_config(
-    page_title="Scanner Renacer 21",
-    page_icon="🥗",
+    page_title="Semáforo Nutricional", 
+    page_icon="🚦", 
     layout="centered"
 )
 
@@ -23,8 +23,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- CABECERA ---
-st.title("🥗 Coach Renacer: Scanner IA")
-st.markdown("---")
+st.title("🚦 Semáforo Nutricional Renacer")
+st.markdown("Tu guía visual para tomar mejores decisiones en cada plato.")
 
 # --- CONEXIÓN SEGURA (Secretos) ---
 try:
