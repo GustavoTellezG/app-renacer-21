@@ -30,7 +30,7 @@ with st.sidebar:
 def analizar_imagen(imagen, prompt, key):
     try:
         genai.configure(api_key=key)
-        model = genai.GenerativeModel('gemini-pro-vision') # Usamos Flash para respuesta rápida
+        model = genai.GenerativeModel('gemini-1.5-flash') # Usamos Flash para respuesta rápida
         response = model.generate_content([prompt, imagen])
         return response.text
     except Exception as e:
